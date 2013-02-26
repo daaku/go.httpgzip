@@ -16,7 +16,7 @@ type gzipResponseWriter struct {
 	sniffDone bool
 }
 
-func (w gzipResponseWriter) Write(b []byte) (int, error) {
+func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 	if !w.sniffDone {
 		if w.Header().Get("Content-Type") == "" {
 			w.Header().Set("Content-Type", http.DetectContentType(b))
@@ -36,6 +36,6 @@ func NewHandler(h http.Handler) http.Handler {
 		w.Header().Set("Content-Encoding", "gzip")
 		gz := gzip.NewWriter(w)
 		defer gz.Close()
-		h.ServeHTTP(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
+		h.ServeHTTP(&gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
 	})
 }
