@@ -29,6 +29,7 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 // Wrap a http.Handler to support transparent gzip encoding.
 func NewHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Vary", "Accept-Encoding")
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			h.ServeHTTP(w, r)
 			return
