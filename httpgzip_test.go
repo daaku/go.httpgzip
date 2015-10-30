@@ -2,12 +2,13 @@ package httpgzip_test
 
 import (
 	"bytes"
-	"github.com/daaku/go.httpgzip"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/daaku/go.httpgzip"
 )
 
 func stubHandler(response string) http.Handler {
@@ -154,6 +155,32 @@ func TestWithGzipDoubleWrite(t *testing.T) {
 			"Accept-Encoding": []string{"gzip"},
 		},
 	})
+	if writer.Body == nil {
+		t.Fatal("expected a body")
+	}
+	if l := writer.Body.Len(); l != 54 {
+		t.Fatalf("invalid body length, got %d", l)
+	}
+}
+
+func TestWithGzipContentLength(t *testing.T) {
+	handler := httpgzip.NewHandler(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "2000")
+			w.WriteHeader(http.StatusOK)
+			w.Write(bytes.Repeat([]byte("foo"), 1000))
+			w.Write(bytes.Repeat([]byte("bar"), 1000))
+		}))
+	writer := httptest.NewRecorder()
+	handler.ServeHTTP(writer, &http.Request{
+		Method: "GET",
+		Header: http.Header{
+			"Accept-Encoding": []string{"gzip"},
+		},
+	})
+	if _, ok := writer.Header()["Content-Length"]; ok {
+		t.Error("got a Content-Length header, which is surely wrong")
+	}
 	if writer.Body == nil {
 		t.Fatal("expected a body")
 	}
