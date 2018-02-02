@@ -13,17 +13,23 @@ import (
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
-	sniffDone bool
+	wroteHeader bool
 }
 
 func (w *gzipResponseWriter) Write(b []byte) (int, error) {
-	if !w.sniffDone {
+	if !w.wroteHeader {
 		if w.Header().Get("Content-Type") == "" {
 			w.Header().Set("Content-Type", http.DetectContentType(b))
 		}
-		w.sniffDone = true
+		w.WriteHeader(http.StatusOK)
 	}
 	return w.Writer.Write(b)
+}
+
+func (w *gzipResponseWriter) WriteHeader(status int) {
+	w.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(status)
+	w.wroteHeader = true
 }
 
 // Wrap a http.Handler to support transparent gzip encoding.
